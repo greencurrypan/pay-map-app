@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1120" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>PayMap Pro | 自分専用・最適決済＆ポイント三重取り・クーポン管理マップ</title>
+  <link rel="manifest" href="./manifest.json" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet Map CSS & JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 select-none">
+
+  <!-- ========================================================================
+       上部固定ヘッダー：検索・エリア切替・現在の高還元ブースト状態表示
+       ======================================================================== -->
+  <header class="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 px-3 pt-2.5 pb-2">
+    <div class="max-w-3xl mx-auto space-y-2">
+      <!-- タイトル行＆エリア選択 -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-black text-slate-950 text-sm shadow">
+            ¥%
+          </div>
+          <div>
+            <h1 class="text-sm font-black tracking-tight text-white leading-none">PayMap Pro</h1>
+            <p id="location-status-text" class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
+              📍 新宿駅周辺（デモ座標）を表示中
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <select
+            id="area-preset-select"
+            aria-label="エリア選択"
+            class="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-emerald-500"
+          ></select>
+          <button
+            id="locate-gps-btn"
+            title="現在地を取得"
+            class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow flex items-center gap-1"
+          >
+            <span>📡</span>
+            <span class="hidden sm:inline">現在地</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 現在のアクティブ還元・クーポン設定バッジ -->
+      <div id="active-mode-pills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"></div>
+
+      <!-- 店名クイック検索バー -->
+      <div class="relative">
+        <input
+          type="search"
+          id="store-search-input"
+          placeholder="店名で即検索（例：セブン、スタバ、マツキヨ、ウエルシア、ヨドバシ、サイゼ...）"
+          class="w-full bg-slate-900 border border-slate-700/90 focus:border-emerald-500 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
+        />
+        <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+      </div>
+
+      <!-- カテゴリ横スクロールフィルタ -->
+      <div id="category-filter-bar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5"></div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       メインコンテンツ領域（5つのビューパネル）
+       ======================================================================== -->
+  <main class="flex-1 max-w-3xl w-full mx-auto px-3 pt-2 pb-24">
+
+    <!-- 【パネル1】リアルタイム地図 ＋ 周辺店舗リスト -->
+    <section data-view-panel="map" class="space-y-3">
+      <!-- マップコンテナ -->
+      <div class="relative w-full h-[290px] sm:h-[340px] rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+        <div id="map"></div>
+
+        <!-- マップ中心で再検索フローティングボタン -->
+        <button
+          id="search-map-center-btn"
+          class="absolute top-2.5 right-2.5 z-[400] px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-extrabold border border-slate-600 shadow-lg flex items-center gap-1 backdrop-blur"
+        >
+          <span>🔄</span>
+          <span>この周辺を再検索</span>
+        </button>
+
+        <!-- 凡例ガイド -->
+        <div class="absolute bottom-2 left-2 z-[400] px-2.5 py-1 rounded-lg bg-slate-950/85 border border-slate-700/80 text-[10px] text-slate-300 backdrop-blur">
+          💡 ピンまたは下の店舗をタップで「提示ポイント＋最適決済＋クーポン」を表示
+        </div>
+      </div>
+
+      <!-- 周辺店舗・ベスト決済リスト -->
+      <div>
+        <div class="flex items-center justify-between mb-2 px-1">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <span>📍 周辺の店舗（提示ポイント＋最適決済）</span>
+            <span id="nearby-stores-count" class="px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 text-[10px]">0件</span>
+          </h2>
+          <span class="text-[10px] text-slate-400">タップで内訳・特約店登録</span>
+        </div>
+
+        <div id="nearby-stores-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- 【パネル2】全チェーン店クイック検索カタログ（地下・屋内でも0秒判定） -->
+    <section data-view-panel="chains" class="hidden space-y-3 pt-1">
+      <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+        <h2 class="text-sm font-extrabold text-white">⚡ チェーン店クイック判定（GPS不要・地下でも0秒）</h2>
+        <p class="text-xs text-slate-400 mt-0.5">
+          地下街やビル内でGPSがズレる時は、ここからお目当てのチェーン店をタップするだけで「STEP1:提示ポイント」＋「STEP2:最適決済」が即座にわかります。
+        </p>
+      </div>
+      <div id="chains-catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+    </section>
+
+    <!-- 【パネル3：新規！】期間限定クーポン ＆ エポス3枠・JCBポイントアップ選択管理 -->
+    <section data-view-panel="coupons" class="hidden pt-1">
+      <div id="coupons-and-pointup-content"></div>
+    </section>
+
+    <!-- 【パネル4】あなたの6枚編成・最強ポイ活黄金ルート＆二重取り早見表 -->
+    <section data-view-panel="strategy" class="hidden pt-1">
+      <div id="strategy-guide-content"></div>
+    </section>
+
+    <!-- 【パネル5】基本カード設定（100万ボーナス・ポイントカード管理・マイ店舗登録） -->
+    <section data-view-panel="settings" class="hidden pt-1">
+      <div id="settings-panel-content"></div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       レジ前3秒・最強コンボ詳細モーダル（ボトムシート）
+       ======================================================================== -->
+  <div
+    id="store-modal-backdrop"
+    class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+  >
+    <div class="animate-slide-up bg-slate-900 border-t sm:border border-slate-700 w-full max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl">
+      <!-- モーダル上部ハンドル＆閉じるボタン -->
+      <div class="flex items-center justify-between px-4 pt-3 pb-1">
+        <div class="w-10 h-1.5 rounded-full bg-slate-700 mx-auto sm:hidden"></div>
+        <span class="text-[11px] font-bold text-slate-400 hidden sm:inline">レジ前3秒・最適決済＆ポイント・クーポンガイド</span>
+        <button
+          id="close-modal-btn"
+          class="ml-auto w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- モーダル本文 -->
+      <div id="store-modal-body" class="px-4 pb-6 pt-1 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       下部固定タブナビゲーション（5タブ構成）
+       ======================================================================== -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-1.5 py-1.5">
+    <div class="max-w-lg mx-auto grid grid-cols-5 gap-1">
+      <button
+        data-nav-tab="map"
+        class="flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-slate-800/90 transition-all"
+      >
+        <span class="text-base leading-none">🗺️</span>
+        <span class="text-[10px] font-extrabold mt-1">周辺マップ</span>
+      </button>
+
+      <button
+        data-nav-tab="chains"
+        class="flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition-all"
+      >
+        <span class="text-base leading-none">⚡</span>
+        <span class="text-[10px] font-extrabold mt-1">チェーン判定</span>
+      </button>
+
+      <button
+        data-nav-tab="coupons"
+        class="relative flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition-all"
+      >
+        <span class="text-base leading-none">🎟️</span>
+        <span class="text-[10px] font-extrabold mt-1">特約・クーポン</span>
+        <span id="nav-coupon-badge" class="hidden absolute top-1 right-2 w-2 h-2 rounded-full bg-rose-500"></span>
+      </button>
+
+      <button
+        data-nav-tab="strategy"
+        class="flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition-all"
+      >
+        <span class="text-base leading-none">🏆</span>
+        <span class="text-[10px] font-extrabold mt-1">黄金ルート</span>
+      </button>
+
+      <button
+        data-nav-tab="settings"
+        class="flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition-all"
+      >
+        <span class="text-base leading-none">💳</span>
+        <span class="text-[10px] font-extrabold mt-1">基本設定</span>
+      </button>
+    </div>
+  </nav>
+
+  <script src="./data.js"></script>
+  <script src="./engine.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

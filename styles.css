@@ -1,0 +1,120 @@
+/* ============================================================================
+   PayMap Pro - モバイルファースト・カスタムスタイル
+   ============================================================================ */
+
+:root {
+  --bg-dark: #0f172a;
+  --card-dark: #1e293b;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", sans-serif;
+  background-color: #0b1120;
+  color: #f8fafc;
+  overscroll-behavior-y: none;
+}
+
+/* スクロールバー非表示（横スクロールピル用） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Leaflet マップのダークモード＆カスタムピン調整 */
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  background: #1e293b;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  padding: 2px !important;
+}
+
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+/* 地図上のカスタム決済バッジピン */
+.pay-pin-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.9);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.pay-pin-marker:hover,
+.pay-pin-marker.active-pin {
+  transform: translate(-50%, -50%) scale(1.14);
+  z-index: 999 !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65), 0 0 0 3px #facc15;
+}
+
+.pay-pin-rate {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+}
+
+/* 現在地パルスマーカー */
+.user-location-dot {
+  width: 18px;
+  height: 18px;
+  background: #3b82f6;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.35);
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* モーダル・ボトムシートのアニメーション */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

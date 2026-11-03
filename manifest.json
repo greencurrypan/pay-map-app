@@ -1,0 +1,11 @@
+{
+  "name": "PayMap Pro - 最適決済＆ポイ活二重取りマップ",
+  "short_name": "PayMap Pro",
+  "description": "保有カード（エポスG・OliveG・JCB・Amazon・Suica・PayPay）と地図を連携し、レジ前3秒で最適決済とポイント二重・三重取りがわかる自分専用アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#006847",
+  "orientation": "portrait-primary"
+}
+
